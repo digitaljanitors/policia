@@ -65,6 +65,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+
 	if cfgFile != "" { // enable ability to specify config file via flag
 		viper.SetConfigFile(cfgFile)
 	}
@@ -77,4 +78,8 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+
+	// Some defaults
+	viper.SetDefault("TagName", "UnaMordida")
+	viper.SetDefault("DefaultEC2Region", "us-east-1")
 }

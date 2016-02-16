@@ -65,12 +65,12 @@ to quickly create a Cobra application.`,
 			filters = append(filters, &ec2.Filter{
 				Name: aws.String("tag-key"),
 				Values: []*string{
-					aws.String("UnaMordida"),
+					aws.String(viper.GetString("TagName")),
 				},
 			})
 		}
 
-		svc := ec2.New(session.New(), &aws.Config{Region: aws.String(viper.GetString("aws.default_region"))})
+		svc := ec2.New(session.New(), &aws.Config{Region: aws.String(viper.GetString("DefaultEC2Region"))})
 
 		params := &ec2.DescribeInstancesInput{Filters: filters}
 		resp, err := svc.DescribeInstances(params)
@@ -116,7 +116,7 @@ func init() {
 }
 
 func isTagged(inst *ec2.Instance) string {
-	_, err := getTag(inst.Tags, "UnaMordida")
+	_, err := getTag(inst.Tags, viper.GetString("TagName"))
 	if err == nil {
 		return "\u2713"
 	}
