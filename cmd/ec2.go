@@ -25,17 +25,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-)
 
-var (
-	tagged  bool
-	stopped bool
+	"github.com/digitaljanitors/policia/aws"
 )
 
 // ec2Cmd represents the ec2 command
@@ -49,31 +44,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		var filters []*ec2.Filter
-
-		if !stopped {
-			filters = append(filters, &ec2.Filter{
-				Name: aws.String("instance-state-name"),
-				Values: []*string{
-					aws.String("running"),
-				},
-			})
-		}
-
-		if tagged {
-			filters = append(filters, &ec2.Filter{
-				Name: aws.String("tag-key"),
-				Values: []*string{
-					aws.String(viper.GetString("TagName")),
-				},
-			})
-		}
-
-		svc := ec2.New(session.New(), &aws.Config{Region: aws.String(viper.GetString("DefaultEC2Region"))})
-
-		params := &ec2.DescribeInstancesInput{Filters: filters}
-		resp, err := svc.DescribeInstances(params)
+		resp, err := aws.GetEC2Instances(cmd, args)
 		if err != nil {
 			log.Println(err)
 		}
@@ -110,8 +81,8 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// ec2Cmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	ec2Cmd.Flags().BoolVarP(&tagged, "tagged", "t", false, "Show only tagged instances")
-	ec2Cmd.Flags().BoolVarP(&stopped, "show-stopped", "", false, "Show stopped instances also")
+	ec2Cmd.Flags().BoolP("tagged", "t", false, "Show only tagged instances")
+	ec2Cmd.Flags().BoolP("show-stopped", "", false, "Show stopped instances also")
 
 }
 
