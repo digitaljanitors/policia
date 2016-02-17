@@ -21,16 +21,12 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
-	"os"
 
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/digitaljanitors/policia/aws"
+	"github.com/digitaljanitors/policia/output"
 )
 
 // ec2Cmd represents the ec2 command
@@ -49,23 +45,11 @@ to quickly create a Cobra application.`,
 			log.Println(err)
 		}
 
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Name", "Instance ID", "Instance Type", "Availability Zone", "Instance State", "Tagged?"})
-
-		// resp has all of the response data, pull out instance IDs:
-		for idx, _ := range resp.Reservations {
-			for _, inst := range resp.Reservations[idx].Instances {
-				table.Append([]string{
-					getInstanceLabel(inst.Tags),
-					*inst.InstanceId,
-					*inst.InstanceType,
-					*inst.Placement.AvailabilityZone,
-					*inst.State.Name,
-					isTagged(inst)})
-			}
+		table := output.NewInstancesTable()
+		err = table.Render(resp)
+		if err != nil {
+			log.Println(err)
 		}
-
-		table.Render()
 	},
 }
 
@@ -84,32 +68,4 @@ func init() {
 	ec2Cmd.Flags().BoolP("tagged", "t", false, "Show only tagged instances")
 	ec2Cmd.Flags().BoolP("show-stopped", "", false, "Show stopped instances also")
 
-}
-
-func isTagged(inst *ec2.Instance) string {
-	_, err := getTag(inst.Tags, viper.GetString("TagName"))
-	if err == nil {
-		return "\u2713"
-	}
-	return ""
-}
-
-func getInstanceLabel(tags []*ec2.Tag) (label string) {
-	tag, err := getTag(tags, "Name")
-	if err == nil {
-		label = *tag.Value
-	}
-	return
-}
-
-func getTag(tags []*ec2.Tag, name string) (tag *ec2.Tag, err error) {
-	for _, t := range tags {
-		if *t.Key == name {
-			tag = t
-		}
-	}
-	if tag == nil {
-		err = fmt.Errorf("Tag not found")
-	}
-	return
 }
