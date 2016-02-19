@@ -1,6 +1,8 @@
 package aws
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -40,5 +42,28 @@ func GetEC2Instances(cmd *cobra.Command, args []string) (resp *ec2.DescribeInsta
 	params := &ec2.DescribeInstancesInput{Filters: filters}
 	resp, err = svc.DescribeInstances(params)
 
+	return
+}
+
+//func StopInstances(DescribeInstancesOutput) {
+
+//}
+
+func IsTagged(inst *ec2.Instance) (is bool) {
+	if _, ok := GetTag(inst.Tags, viper.GetString("TagName")); ok == nil {
+		is = true
+	}
+	return
+}
+
+func GetTag(tags []*ec2.Tag, name string) (tag *ec2.Tag, err error) {
+	for _, t := range tags {
+		if *t.Key == name {
+			tag = t
+		}
+	}
+	if tag == nil {
+		err = fmt.Errorf("Tag not found")
+	}
 	return
 }

@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/digitaljanitors/policia/aws"
 	"github.com/olekukonko/tablewriter"
-	"github.com/spf13/viper"
 )
 
 type AsciiTable interface {
@@ -34,7 +34,7 @@ func (i *InstancesTable) Render(any interface{}) (err error) {
 					*inst.InstanceType,
 					*inst.Placement.AvailabilityZone,
 					*inst.State.Name,
-					isTagged(inst)})
+					taggedCheckmark(inst)})
 			}
 		}
 		i.table.Render()
@@ -43,30 +43,17 @@ func (i *InstancesTable) Render(any interface{}) (err error) {
 	return fmt.Errorf("InstancesTable.Render requires *ec2.DescribeInstancesOutput")
 }
 
-func isTagged(inst *ec2.Instance) string {
-	_, err := getTag(inst.Tags, viper.GetString("TagName"))
-	if err == nil {
+func taggedCheckmark(inst *ec2.Instance) string {
+	if aws.IsTagged(inst) {
 		return "\u2713"
 	}
 	return ""
 }
 
 func getInstanceLabel(tags []*ec2.Tag) (label string) {
-	tag, err := getTag(tags, "Name")
+	tag, err := aws.GetTag(tags, "Name")
 	if err == nil {
 		label = *tag.Value
-	}
-	return
-}
-
-func getTag(tags []*ec2.Tag, name string) (tag *ec2.Tag, err error) {
-	for _, t := range tags {
-		if *t.Key == name {
-			tag = t
-		}
-	}
-	if tag == nil {
-		err = fmt.Errorf("Tag not found")
 	}
 	return
 }

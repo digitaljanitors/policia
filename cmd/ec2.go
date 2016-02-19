@@ -32,7 +32,18 @@ import (
 // ec2Cmd represents the ec2 command
 var ec2Cmd = &cobra.Command{
 	Use:   "ec2",
-	Short: "A brief description of your command",
+	Short: "Police EC2 instances",
+	Long: `A longer description that spans multiple lines and likely contains examples
+and usage of using your command. For example:
+
+Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
+}
+
+var ec2ListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List EC2 Instances",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -54,18 +65,13 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	listCmd.AddCommand(ec2Cmd)
+	RootCmd.AddCommand(ec2Cmd)
+	ec2Cmd.AddCommand(ec2ListCmd)
 
-	// Here you will define your flags and configuration settings.
+	// Flags for all EC2 subcommands
+	ec2Cmd.PersistentFlags().BoolP("dry-run", "", false, "Do not make any changes, just show what would happen")
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// ec2Cmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// ec2Cmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	ec2Cmd.Flags().BoolP("tagged", "t", false, "Show only tagged instances")
-	ec2Cmd.Flags().BoolP("show-stopped", "", false, "Show stopped instances also")
-
+	// Flags for ec2ListCmd
+	ec2ListCmd.Flags().BoolP("tagged", "t", false, "Show only tagged instances")
+	ec2ListCmd.Flags().BoolP("show-stopped", "", false, "Show stopped instances also")
 }
