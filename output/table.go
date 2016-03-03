@@ -14,7 +14,7 @@ type AsciiTable interface {
 }
 
 type InstancesTable struct {
-	table *tablewriter.Table
+	*tablewriter.Table
 }
 
 func NewInstancesTable() (table *InstancesTable) {
@@ -24,11 +24,11 @@ func NewInstancesTable() (table *InstancesTable) {
 	return
 }
 
-func (i *InstancesTable) Render(any interface{}) (err error) {
+func (i *InstancesTable) Append(any interface{}) (err error) {
 	if data, ok := any.(*ec2.DescribeInstancesOutput); ok {
 		for idx, _ := range data.Reservations {
 			for _, inst := range data.Reservations[idx].Instances {
-				i.table.Append([]string{
+				i.Table.Append([]string{
 					getInstanceLabel(inst.Tags),
 					*inst.InstanceId,
 					*inst.InstanceType,
@@ -37,7 +37,6 @@ func (i *InstancesTable) Render(any interface{}) (err error) {
 					taggedCheckmark(inst)})
 			}
 		}
-		i.table.Render()
 		return
 	}
 	return fmt.Errorf("InstancesTable.Render requires *ec2.DescribeInstancesOutput")

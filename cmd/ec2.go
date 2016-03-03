@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -57,21 +58,60 @@ to quickly create a Cobra application.`,
 		}
 
 		table := output.NewInstancesTable()
-		err = table.Render(resp)
-		if err != nil {
-			log.Println(err)
+		for _, instances := range resp {
+			err = table.Append(instances)
+			if err != nil {
+				log.Println(err)
+			}
 		}
+		table.Render()
+	},
+}
+
+var ec2StopCmd = &cobra.Command{
+	Use:   "stop",
+	Short: "Stop Untagged Instances",
+	Long:  `Find all untagged instances and stop them`,
+	Run: func(cmd *cobra.Command, args []string) {
+		//resp, err := aws.GetEC2Instances(cmd, args)
+		//if err != nil {
+		//log.Println(err)
+		//}
+
+		//for idx, _ := range data.Reservations {
+		//for _, inst := range data.Reservations[idx].Instances {
+		//if output.isTagged
+		//}
+		//}
+	},
+}
+
+var ec2RegionsCmd = &cobra.Command{
+	Use:   "regions",
+	Short: "list available regions",
+	Long:  "List all EC2 regions",
+	Run: func(cmd *cobra.Command, args []string) {
+		resp, err := aws.GetRegions(cmd, args)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		fmt.Println(resp)
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(ec2Cmd)
 	ec2Cmd.AddCommand(ec2ListCmd)
+	ec2Cmd.AddCommand(ec2RegionsCmd)
 
 	// Flags for all EC2 subcommands
-	ec2Cmd.PersistentFlags().BoolP("dry-run", "", false, "Do not make any changes, just show what would happen")
+	ec2Cmd.PersistentFlags().Bool("dryrun", false, "Do not make any changes, just show what would happen")
+	ec2Cmd.PersistentFlags().StringSliceP("region", "r", nil, "Limit the region, more than one can be used  (ie. -r us-east-1 -r us-west-1")
 
 	// Flags for ec2ListCmd
 	ec2ListCmd.Flags().BoolP("tagged", "t", false, "Show only tagged instances")
+	ec2ListCmd.Flags().BoolP("untagged", "u", false, "Show only tagged instances")
 	ec2ListCmd.Flags().BoolP("show-stopped", "", false, "Show stopped instances also")
 }
