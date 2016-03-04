@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -60,37 +61,58 @@ func GetEC2Instances(cmd *cobra.Command, args []string) (resp map[string]*ec2.De
 	return
 }
 
-func StopInstances(cmd *cobra.Command, args []string) (resp *ec2.StopInstancesOutput, err error) {
+func StopInstances(cmd *cobra.Command, args []string) (resp map[string]*ec2.StopInstancesOutput, err error) {
 	var (
-		instanceIds []*string
-		dryrun      bool
-		data        map[string]*ec2.DescribeInstancesOutput
+		dryrun bool
+		data   map[string]*ec2.DescribeInstancesOutput
+		svc    *ec2.EC2
+		r      *ec2.StopInstancesOutput
 	)
 
-	svc := ec2.New(session.New(), &aws.Config{Region: aws.String(viper.GetString("DefaultEC2Region"))})
+	resp = make(map[string]*ec2.StopInstancesOutput)
 
-	dryrun, err = cmd.Flags().GetBool("dryrun")
+	dryrun, _ = cmd.Flags().GetBool("dryrun")
 
 	data, err = GetEC2Instances(cmd, args)
-	if err != nil {
+	if err == nil {
 		for region, _ := range data {
+			var instanceIds []*string
+			svc = ec2.New(session.New(), &aws.Config{Region: aws.String(region)})
 			for idx, _ := range data[region].Reservations {
 				for _, inst := range data[region].Reservations[idx].Instances {
-					if IsTagged(inst) && IsRunning(inst) {
+					if !IsTagged(inst) && IsRunning(inst) {
+						if IsSpot(inst) {
+							log.Printf("Can not stop spot instance: %s", *inst.InstanceId)
+							continue
+						}
 						instanceIds = append(instanceIds, inst.InstanceId)
 					}
 				}
 			}
-		}
 
-		params := &ec2.StopInstancesInput{
-			InstanceIds: instanceIds,
-			DryRun:      aws.Bool(dryrun),
+			if len(instanceIds) > 0 {
+				params := &ec2.StopInstancesInput{
+					InstanceIds: instanceIds,
+					DryRun:      aws.Bool(dryrun),
+				}
+				r, err = svc.StopInstances(params)
+				if err != nil {
+					fmt.Println("OMG")
+					fmt.Println(r.StoppingInstances)
+					fmt.Println("OMG")
+					resp[region] = r
+				}
+			}
 		}
-
-		resp, err = svc.StopInstances(params)
 	}
 
+	return
+}
+
+func IsSpot(inst *ec2.Instance) (is bool) {
+	if inst.InstanceLifecycle != nil {
+		is = (*inst.InstanceLifecycle == ec2.InstanceLifecycleTypeSpot)
+	}
 	return
 }
 

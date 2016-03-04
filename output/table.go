@@ -42,6 +42,24 @@ func (i *InstancesTable) Append(any interface{}) (err error) {
 	return fmt.Errorf("InstancesTable.Render requires *ec2.DescribeInstancesOutput")
 }
 
+type StateChangeTable struct {
+	*tablewriter.Table
+}
+
+func NewStateChangeTable() (table *StateChangeTable) {
+	t := tablewriter.NewWriter(os.Stdout)
+	t.SetHeader([]string{"Region", "InstanceId", "Previous State", "Current State"})
+	table = &StateChangeTable{t}
+	return
+}
+
+func (i *StateChangeTable) Append(region string, changes []*ec2.InstanceStateChange) (err error) {
+	for _, c := range changes {
+		i.Table.Append([]string{region, *c.InstanceId, *c.PreviousState.Name, *c.CurrentState.Name})
+	}
+	return
+}
+
 func taggedCheckmark(inst *ec2.Instance) string {
 	if aws.IsTagged(inst) {
 		return "\u2713"

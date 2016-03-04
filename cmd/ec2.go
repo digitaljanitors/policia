@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
 	"github.com/digitaljanitors/policia/aws"
@@ -73,16 +74,26 @@ var ec2StopCmd = &cobra.Command{
 	Short: "Stop Untagged Instances",
 	Long:  `Find all untagged instances and stop them`,
 	Run: func(cmd *cobra.Command, args []string) {
-		//resp, err := aws.GetEC2Instances(cmd, args)
-		//if err != nil {
-		//log.Println(err)
-		//}
+		dryrun, _ := cmd.Flags().GetBool("dryrun")
+		if dryrun {
+			color.Red("Instances will not be stopped due to --dryrun flag.")
+		}
 
-		//for idx, _ := range data.Reservations {
-		//for _, inst := range data.Reservations[idx].Instances {
-		//if output.isTagged
-		//}
-		//}
+		resp, err := aws.StopInstances(cmd, args)
+		if err != nil {
+			log.Println(err)
+		}
+
+		table := output.NewStateChangeTable()
+		for region, changes := range resp {
+			err = table.Append(region, changes.StoppingInstances)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		table.Render()
+
+		fmt.Println(resp)
 	},
 }
 
@@ -104,6 +115,7 @@ var ec2RegionsCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(ec2Cmd)
 	ec2Cmd.AddCommand(ec2ListCmd)
+	ec2Cmd.AddCommand(ec2StopCmd)
 	ec2Cmd.AddCommand(ec2RegionsCmd)
 
 	// Flags for all EC2 subcommands
